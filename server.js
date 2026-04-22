@@ -69,3 +69,11 @@ server.on('connect', (req, clientSocket, head) => {
 server.listen(port, () => {
   console.log(`Proxy server is running on port ${port}`);
 });
+// Самопинг для предотвращения сна Render (каждые 10 минут)
+setInterval(() => {
+  http.get(`http://localhost:${port}/ping`, (res) => {
+    console.log('Self-ping OK');
+  }).on('error', (err) => {
+    console.error('Self-ping failed:', err.message);
+  });
+}, 10 * 60 * 1000); // 10 минут в миллисекундах
