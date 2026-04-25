@@ -1,25 +1,20 @@
 FROM ubuntu:latest
 
-RUN apt-get update && apt-get install -y squid apache2-utils && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y tinyproxy apache2-utils && rm -rf /var/lib/apt/lists/*
 
-# Пользователь прокси
-RUN htpasswd -cb /etc/squid/passwords user password
+# Создаём файл с пользователем и паролем для basic auth
+RUN htpasswd -cb /etc/tinyproxy/htpasswd user password
 
-# Полностью перезаписываем конфиг Squid, оставляем только порт 8080
-RUN printf 'http_port 8080\n' > /etc/squid/squid.conf && \
-    printf 'auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwords\n' >> /etc/squid/squid.conf && \
-    printf 'auth_param basic realm proxy\n' >> /etc/squid/squid.conf && \
-    printf 'acl authenticated proxy_auth REQUIRED\n' >> /etc/squid/squid.conf && \
-    printf 'http_access allow authenticated\n' >> /etc/squid/squid.conf && \
-    printf 'http_access deny all\n' >> /etc/squid/squid.conf && \
-    printf 'forwarded_for off\n' >> /etc/squid/squid.conf && \
-    printf 'via off\n' >> /etc/squid/squid.conf && \
-    printf 'coredump_dir /var/spool/squid\n' >> /etc/squid/squid.conf && \
-    printf 'cache deny all\n' >> /etc/squid/squid.conf
-
-# Удаляем дефолтный debian.conf, чтобы он не добавлял порт 3128
-RUN rm -f /etc/squid/conf.d/debian.conf
+# Конфиг tinyproxy
+RUN echo "Port 8080" > /etc/tinyproxy/tinyproxy.conf && \
+    echo "Listen 0.0.0.0" >> /etc/tinyproxy/tinyproxy.conf && \
+    echo "Timeout 600" >> /etc/tinyproxy/tinyproxy.conf && \
+    echo "Allow 0.0.0.0/0" >> /etc/tinyproxy/tinyproxy.conf && \
+    echo "BasicAuth /etc/tinyproxy/htpasswd" >> /etc/tinyproxy/tinyproxy.conf && \
+    echo "LogLevel Info" >> /etc/tinyproxy/tinyproxy.conf && \
+    echo "MaxClients 100" >> /etc/tinyproxy/tinyproxy.conf && \
+    echo "ViaProxyName \"tinyproxy\"" >> /etc/tinyproxy/tinyproxy.conf
 
 EXPOSE 8080
 
-CMD ["squid", "-N", "-d1"]
+CMD ["tinyproxy", "-d"]
