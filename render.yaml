@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: squid-proxy
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /
